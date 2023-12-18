@@ -19,6 +19,8 @@ public class JobModel {
 
     private String name;
     private String group;
+
+    private String cronExpression;
     private Class<Job> jobClass;
 
     public TriggerKey getTriggerkey(){
