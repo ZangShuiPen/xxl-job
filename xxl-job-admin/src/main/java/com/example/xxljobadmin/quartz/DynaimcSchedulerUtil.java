@@ -1,15 +1,15 @@
 package com.example.xxljobadmin.quartz;
 
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.quartz.JobKey;
-import org.quartz.Scheduler;
-import org.quartz.SchedulerException;
+import org.quartz.*;
 import org.quartz.impl.StdSchedulerFactory;
 import org.quartz.impl.matchers.GroupMatcher;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.stereotype.Component;
 import org.springframework.util.ObjectUtils;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Set;
 
@@ -57,6 +57,19 @@ public class DynaimcSchedulerUtil implements InitializingBean {
     }
 
 
+    public boolean addJob(JobModel jobModel) throws SchedulerException {
+        if (scheduler.checkExists(jobModel.getTriggerkey())){
+             Trigger trigger = scheduler.getTrigger(jobModel.getTriggerkey());
+             log.info(String.format(">>>>>>>>>>> trigger+[%s]",trigger));
+             return false;
+        }
+         CronScheduleBuilder cronScheduleBuilder = CronScheduleBuilder.cronSchedule(jobModel.getCronExpression());
+         CronTrigger cronTrigger = TriggerBuilder.newTrigger().withIdentity(jobModel.getTriggerkey()).withSchedule(cronScheduleBuilder).build();
+         Date date = scheduler.scheduleJob(jobModel.getJobDeatail(), cronTrigger);
+         log.info(String.format(">>>>>>>>>>>> data is %s",date));
+         log.info(String.format(">>>>>>>>>>  start job cronTrigger is ：%s , jobDeatail is :%s",cronTrigger,jobModel.getJobDeatail()));
+         return true;
+    }
 
 
 }
