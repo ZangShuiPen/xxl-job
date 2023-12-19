@@ -16,29 +16,43 @@ import org.quartz.SchedulerException;
 import org.quartz.Trigger;
 import org.quartz.TriggerBuilder;
 import org.quartz.TriggerKey;
+import org.quartz.impl.StdSchedulerFactory;
 import org.quartz.impl.matchers.GroupMatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
+import org.springframework.util.ObjectUtils;
 
+
+@Component
 public final class DynamicSchedulerUtil implements InitializingBean {
+
     private static final Logger logger = LoggerFactory.getLogger(DynamicSchedulerUtil.class);
 
     // Scheduler
     private static Scheduler scheduler;
+
     public static void setScheduler(Scheduler scheduler) {
         DynamicSchedulerUtil.scheduler = scheduler;
     }
 
+    public static Scheduler getScheduler() {
+       return DynamicSchedulerUtil.scheduler;
+    }
+
     @Override
     public void afterPropertiesSet() throws Exception {
+        if (ObjectUtils.isEmpty(scheduler)){
+            DynamicSchedulerUtil.scheduler= StdSchedulerFactory.getDefaultScheduler();
+        }
         Assert.notNull(scheduler, "quartz scheduler is null");
         logger.info(">>>>>>>>> init quartz scheduler success.[{}]", scheduler);
     }
 
     // getJobKeys
-    public static Set<JobKey> getJobKeys(){
+    public static Set<JobKey> getJobKeys() {
         try {
             String groupName = scheduler.getJobGroupNames().get(0);
             return scheduler.getJobKeys(GroupMatcher.jobGroupEquals(groupName));
@@ -67,9 +81,9 @@ public final class DynamicSchedulerUtil implements InitializingBean {
 
         // JobDetail : jobClass
         JobDetail jobDetail = JobBuilder.newJob(jobClass).withIdentity(triggerKeyName, group).build();
-        if (jobData!=null && jobData.size() > 0) {
+        if (jobData != null && jobData.size() > 0) {
             JobDataMap jobDataMap = jobDetail.getJobDataMap();
-            jobDataMap.putAll(jobData);	// JobExecutionContext context.getMergedJobDataMap().get("mailGuid");
+            jobDataMap.putAll(jobData);    // JobExecutionContext context.getMergedJobDataMap().get("mailGuid");
         }
 
         // schedule : jobDetail + cronTrigger
