@@ -1,9 +1,6 @@
 package com.example.xxljobadmin.quartz;
 
-import java.util.Date;
-import java.util.Map;
-import java.util.Set;
-
+import java.util.*;
 import org.quartz.CronScheduleBuilder;
 import org.quartz.CronTrigger;
 import org.quartz.Job;
@@ -51,17 +48,29 @@ public final class DynamicSchedulerUtil implements InitializingBean {
         logger.info(">>>>>>>>> init quartz scheduler success.[{}]", scheduler);
     }
 
-    // getJobKeys
-    public static Set<JobKey> getJobKeys() {
+    public static List<Map<String,Object>> getJobList(){
+         List<Map<String, Object>> jobList = new ArrayList<>();
         try {
             String groupName = scheduler.getJobGroupNames().get(0);
-            return scheduler.getJobKeys(GroupMatcher.jobGroupEquals(groupName));
-        } catch (SchedulerException e) {
+            Set<JobKey> jobKeys = scheduler.getJobKeys(GroupMatcher.jobGroupEquals(groupName));
+            if (jobKeys != null && jobKeys.size()>0){
+                for (JobKey jobKey:jobKeys){
+                     TriggerKey triggerKey = TriggerKey.triggerKey(jobKey.getName(), Scheduler.DEFAULT_GROUP);
+                     Trigger trigger = scheduler.getTrigger(triggerKey);
+                     JobDetail jobDetail = scheduler.getJobDetail(jobKey);
+                     HashMap<String, Object> map = new HashMap<>();
+                     map.put("triggerKey",triggerKey);
+                     map.put("trigger",trigger);
+                     map.put("jobDetail",jobDetail);
+                    jobList.add(map);
+                }
+            }
+        }catch (Exception e){
             e.printStackTrace();
-            return null;
+            return  null;
         }
+        return jobList;
     }
-
     // addJob 新增
     public static boolean addJob(String triggerKeyName, String cronExpression, Class<? extends Job> jobClass, Map<String, Object> jobData) throws SchedulerException {
         // TriggerKey : name + group
@@ -92,6 +101,8 @@ public final class DynamicSchedulerUtil implements InitializingBean {
         logger.info(">>>>>>>>>>> addJob success, jobDetail:{}, cronTrigger:{}, date:{}", jobDetail, cronTrigger, date);
         return true;
     }
+
+
 
     // unscheduleJob 删除
     public static boolean removeJob(String triggerKeyName) throws SchedulerException {
